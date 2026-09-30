@@ -1,19 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { useProjects, useDeleteProject } from '@/hooks/use-projects';
 import ProjectFormModal from '@/components/project-form-modal';
+import type { Project } from '@/types';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
-
-export type Project = {
-    _id: string;
-    title: string;
-    description?: string;
-    status: 'active' | 'paused' | 'completed';
-    deadline?: string;
-    client: { _id: string; name: string; company?: string };
-};
 
 const statusStyles: Record<Project['status'], string> = {
     active: 'bg-green-50 text-primary',
@@ -22,19 +13,11 @@ const statusStyles: Record<Project['status'], string> = {
 };
 
 export default function ProjectsPage() {
-    const queryClient = useQueryClient();
     const [modalOpen, setModalOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
 
-    const { data: projects, isLoading } = useQuery<Project[]>({
-        queryKey: ['projects'],
-        queryFn: () => api('/projects'),
-    });
-
-    const deleteMutation = useMutation({
-        mutationFn: (id: string) => api(`/projects/${id}`, { method: 'DELETE' }),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['projects'] }),
-    });
+    const { data: projects, isLoading } = useProjects();
+    const deleteMutation = useDeleteProject();
 
     return (
         <div>

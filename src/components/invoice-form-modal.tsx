@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { useProjects } from '@/hooks/use-projects';
+import { useCreateInvoice } from '@/hooks/use-invoices';
+import type { LineItem } from '@/types';
 import { Plus, X } from 'lucide-react';
 
 type Props = {
@@ -10,17 +11,9 @@ type Props = {
     onClose: () => void;
 };
 
-type LineItem = { description: string; quantity: number; rate: number };
-type ProjectOption = { _id: string; title: string; client: { _id: string } };
-
 export default function InvoiceFormModal({ open, onClose }: Props) {
-    const queryClient = useQueryClient();
-
-    const { data: projects } = useQuery<ProjectOption[]>({
-        queryKey: ['projects'],
-        queryFn: () => api('/projects'),
-        enabled: open,
-    });
+    const { data: projects } = useProjects();
+    const createMutation = useCreateInvoice();
 
     const [project, setProject] = useState('');
     const [dueDate, setDueDate] = useState('');
@@ -52,25 +45,20 @@ export default function InvoiceFormModal({ open, onClose }: Props) {
 
     const total = lineItems.reduce((sum, item) => sum + item.quantity * item.rate, 0);
 
-    const mutation = useMutation({
-        mutationFn: () => {
-            const selectedProject = projects?.find((p) => p._id === project);
-            return api('/invoices', {
-                method: 'POST',
-                body: {
-                    project,
-                    client: selectedProject?.client._id,
-                    dueDate,
-                    lineItems,
-                },
-            });
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['invoices'] });
-            queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
-            onClose();
-        },
-    });
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const selectedProject = projects?.find((p) => p._id === project);
+
+        createMutation.mutate(
+            {
+                project,
+                client: selectedProject?.client._id,
+                dueDate,
+                lineItems,
+            },
+            { onSuccess: onClose }
+        );
+    };
 
     if (!open) return null;
 
@@ -79,15 +67,11 @@ export default function InvoiceFormModal({ open, onClose }: Props) {
             <div className="w-full max-w-lg rounded-2xl bg-card p-6 shadow-lg">
                 <h2 className="text-lg font-semibold">New invoice</h2>
 
-                <form onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }} className="mt-4 space-y-4">
+                <form onSubmit={handleSubmit} className="mt-4 space-y-4">
                     <div>
                         <label className="block text-sm text-ink-muted">Project</label>
-                        <select
-                            value={project}
-                            onChange={(e) => setProject(e.target.value)}
-                            required
-                            className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-primary"
-                        >
+                        <select value={project} onChange={(e) => setProject(e.target.value)} required
+                            className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-primary">
                             <option value="" disabled>Select a project</option>
                             {projects?.map((p) => (
                                 <option key={p._id} value={p._id}>{p.title}</option>
@@ -97,13 +81,8 @@ export default function InvoiceFormModal({ open, onClose }: Props) {
 
                     <div>
                         <label className="block text-sm text-ink-muted">Due date</label>
-                        <input
-                            type="date"
-                            value={dueDate}
-                            onChange={(e) => setDueDate(e.target.value)}
-                            required
-                            className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-primary"
-                        />
+                        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} required
+                            className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-primary" />
                     </div>
 
                     <div>
@@ -141,11 +120,7 @@ export default function InvoiceFormModal({ open, onClose }: Props) {
                             ))}
                         </div>
 
-                        <button
-                            type="button"
-                            onClick={addLineItem}
-                            className="mt-2 flex items-center gap-1 text-sm text-primary"
-                        >
+                        <button type="button" onClick={addLineItem} className="mt-2 flex items-center gap-1 text-sm text-primary">
                             <Plus size={14} /> Add line item
                         </button>
                     </div>
@@ -155,9 +130,9 @@ export default function InvoiceFormModal({ open, onClose }: Props) {
                         <span className="text-lg font-semibold tabular-nums">${total.toLocaleString()}</span>
                     </div>
 
-                    {mutation.isError && (
+                    {createMutation.isError && (
                         <p className="text-sm text-rose-600">
-                            {mutation.error instanceof Error ? mutation.error.message : 'Something went wrong'}
+                            {createMutation.error instanceof Error ? createMutation.error.message : 'Something went wrong'}
                         </p>
                     )}
 
@@ -165,12 +140,9 @@ export default function InvoiceFormModal({ open, onClose }: Props) {
                         <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-ink-muted hover:bg-surface">
                             Cancel
                         </button>
-                        <button
-                            type="submit"
-                            disabled={mutation.isPending}
-                            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-                        >
-                            {mutation.isPending ? 'Creating…' : 'Create invoice'}
+                        <button type="submit" disabled={createMutation.isPending}
+                            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+                            {createMutation.isPending ? 'Creating…' : 'Create invoice'}
                         </button>
                     </div>
                 </form>

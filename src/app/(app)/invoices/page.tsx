@@ -1,21 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { useInvoices, useDeleteInvoice, useMarkInvoicePaid } from '@/hooks/use-invoices';
 import InvoiceFormModal from '@/components/invoice-form-modal';
+import type { Invoice } from '@/types';
 import { Plus, Trash2, CheckCircle } from 'lucide-react';
-
-export type Invoice = {
-    _id: string;
-    invoiceNumber: string;
-    total: number;
-    status: 'draft' | 'sent' | 'paid' | 'overdue';
-    dueDate: string;
-    lineItems: { description: string; quantity: number; rate: number }[];
-    project: { _id: string; title: string };
-    client: { _id: string; name: string; company?: string };
-};
 
 const statusStyles: Record<Invoice['status'], string> = {
     draft: 'bg-gray-100 text-gray-600',
@@ -25,26 +14,11 @@ const statusStyles: Record<Invoice['status'], string> = {
 };
 
 export default function InvoicesPage() {
-    const queryClient = useQueryClient();
     const [modalOpen, setModalOpen] = useState(false);
 
-    const { data: invoices, isLoading } = useQuery<Invoice[]>({
-        queryKey: ['invoices'],
-        queryFn: () => api('/invoices'),
-    });
-
-    const deleteMutation = useMutation({
-        mutationFn: (id: string) => api(`/invoices/${id}`, { method: 'DELETE' }),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['invoices'] }),
-    });
-
-    const markPaidMutation = useMutation({
-        mutationFn: (id: string) => api(`/invoices/${id}/mark-paid`, { method: 'PATCH' }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['invoices'] });
-            queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
-        },
-    });
+    const { data: invoices, isLoading } = useInvoices();
+    const deleteMutation = useDeleteInvoice();
+    const markPaidMutation = useMarkInvoicePaid();
 
     return (
         <div>
