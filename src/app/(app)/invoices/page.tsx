@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useInvoices, useDeleteInvoice, useMarkInvoicePaid } from '@/hooks/use-invoices';
 import InvoiceFormModal from '@/components/invoice-form-modal';
+import { ListLoadingSkeleton } from '@/components/page-loading-skeleton';
 import type { Invoice } from '@/types';
 import { Plus, Trash2, CheckCircle } from 'lucide-react';
 
@@ -34,8 +35,8 @@ export default function InvoicesPage() {
             </div>
 
             <div className="mt-6 rounded-2xl border border-border bg-card shadow-sm">
-                {isLoading && <p className="p-6 text-sm text-ink-muted">Loading…</p>}
-                {invoices?.length === 0 && <p className="p-6 text-sm text-ink-muted">No invoices yet.</p>}
+                {isLoading && <ListLoadingSkeleton label="Loading invoices" />}
+                {!isLoading && invoices?.length === 0 && <p className="p-6 text-sm text-ink-muted">No invoices yet.</p>}
 
                 <div className="divide-y divide-border">
                     {invoices?.map((invoice) => (

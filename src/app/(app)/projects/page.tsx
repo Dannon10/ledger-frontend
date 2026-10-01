@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useProjects, useDeleteProject } from '@/hooks/use-projects';
 import ProjectFormModal from '@/components/project-form-modal';
+import { ListLoadingSkeleton } from '@/components/page-loading-skeleton';
 import type { Project } from '@/types';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 
@@ -33,8 +34,8 @@ export default function ProjectsPage() {
             </div>
 
             <div className="mt-6 rounded-2xl border border-border bg-card shadow-sm">
-                {isLoading && <p className="p-6 text-sm text-ink-muted">Loading…</p>}
-                {projects?.length === 0 && <p className="p-6 text-sm text-ink-muted">No projects yet.</p>}
+                {isLoading && <ListLoadingSkeleton label="Loading projects" />}
+                {!isLoading && projects?.length === 0 && <p className="p-6 text-sm text-ink-muted">No projects yet.</p>}
 
                 <div className="divide-y divide-border">
                     {projects?.map((project) => (

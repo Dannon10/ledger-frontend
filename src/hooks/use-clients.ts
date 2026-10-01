@@ -11,6 +11,14 @@ export function useClients() {
     });
 }
 
+export function useClient(id: string) {
+  return useQuery<Client>({
+    queryKey: ['clients', id],
+    queryFn: () => api(`/clients/${id}`),
+    enabled: Boolean(id),
+  });
+}
+
 export function useCreateClient() {
     const queryClient = useQueryClient();
     return useMutation({

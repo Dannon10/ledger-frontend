@@ -4,13 +4,12 @@ import type { Project } from '@/types';
 
 const KEY = ['projects'];
 
-export function useProjects() {
+export function useProjects(clientId?: string) {
     return useQuery<Project[]>({
-        queryKey: KEY,
-        queryFn: () => api('/projects'),
+        queryKey: clientId ? [...KEY, { clientId }] : KEY,
+        queryFn: () => api(clientId ? `/projects?client=${clientId}` : '/projects'),
     });
 }
-
 export function useCreateProject() {
     const queryClient = useQueryClient();
     return useMutation({
